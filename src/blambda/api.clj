@@ -10,7 +10,7 @@
 
 (defn build-deps-layer
   "Builds layer for dependencies"
-  [{:keys [error deps-path target-dir work-dir] :as opts}]
+  [{:keys [bb-arch error deps-path target-dir work-dir] :as opts}]
   (let [deps-zipfile (lib/deps-zipfile opts)]
     (if (empty? (fs/modified-since deps-zipfile deps-path))
       (println (format "\nNot rebuilding dependencies layer: no changes to %s since %s was last built"
@@ -21,11 +21,25 @@
 
         (let [gitlibs-dir "gitlibs"
               m2-dir "m2-repo"
+              pods-dir ".babashka/pods"
+              pods (->> deps-path slurp edn/read-string :pods)
               deps (->> deps-path slurp edn/read-string :deps)]
 
           (spit (fs/file work-dir "deps.edn")
                 {:deps deps
                  :mvn/local-repo (str m2-dir)})
+
+          (spit (fs/file work-dir "bb.edn")
+                {:pods pods})
+
+          (let [local-pods-dir (fs/path (fs/cwd)  work-dir pods-dir)
+                bb-env {"BABASHKA_PODS_DIR" (str local-pods-dir)
+                        "BABASHKA_PODS_OS_NAME" "Linux"
+                        "BABASHKA_PODS_OS_ARCH" (if (= bb-arch "arm64")
+                                                  "aarch64"
+                                                  "amd64")}]
+            (shell {:dir work-dir :extra-env bb-env}
+                   "bb prepare"))
 
           (let [classpath-file (fs/file work-dir "deps-classpath")
                 local-classpath-file (fs/file work-dir "deps-local-classpath")
@@ -47,6 +61,7 @@
                    "zip -r" deps-zipfile
                    (fs/file-name gitlibs-dir)
                    (fs/file-name m2-dir)
+                   (fs/file-name ".babashka")
                    (fs/file-name classpath-file))))))))
 
 (defn build-runtime-layer
