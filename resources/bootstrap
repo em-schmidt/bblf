@@ -20,6 +20,7 @@ fi
 export BABASHKA_DISABLE_SIGNAL_HANDLERS="true"
 export BABASHKA_PODS_DIR=$LAYERS_DIR/.babashka/pods
 export GITLIBS=$LAYERS_DIR/gitlibs
+export PATH=$PATH:$LAYERS_DIR/pods
 
 echo "Starting Babashka:"
 echo "$LAYERS_DIR/bb -cp $CLASSPATH $LAYERS_DIR/bootstrap.clj"

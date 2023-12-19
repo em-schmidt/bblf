@@ -21,7 +21,7 @@
 
         (let [gitlibs-dir "gitlibs"
               m2-dir "m2-repo"
-              pods-dir ".babashka/pods"
+              pods-bin-dir "pods"
               pods (->> deps-path slurp edn/read-string :pods)
               deps (->> deps-path slurp edn/read-string :deps)]
 
@@ -32,14 +32,19 @@
           (spit (fs/file work-dir "bb.edn")
                 {:pods pods})
 
-          (let [local-pods-dir (fs/path (fs/cwd)  work-dir pods-dir)
-                bb-env {"BABASHKA_PODS_DIR" (str local-pods-dir)
+          (let [tempdir (fs/temp-dir)
+                bindir (fs/canonicalize (fs/path work-dir pods-bin-dir))
+                bb-env {"BABASHKA_PODS_DIR" (str tempdir)
                         "BABASHKA_PODS_OS_NAME" "Linux"
                         "BABASHKA_PODS_OS_ARCH" (if (= bb-arch "arm64")
                                                   "aarch64"
                                                   "amd64")}]
-            (shell {:dir work-dir :extra-env bb-env}
-                   "bb prepare"))
+            (spit (fs/file tempdir "bb.edn")
+                  {:pods pods})
+            (shell {:dir (str tempdir) :extra-env bb-env}
+                   "bb prepare")
+            (fs/create-dir bindir)
+            (run! #(fs/copy % (fs/path bindir (fs/file-name %))) (fs/glob tempdir "**/pod-*")))
 
           (let [classpath-file (fs/file work-dir "deps-classpath")
                 local-classpath-file (fs/file work-dir "deps-local-classpath")
@@ -61,7 +66,7 @@
                    "zip -r" deps-zipfile
                    (fs/file-name gitlibs-dir)
                    (fs/file-name m2-dir)
-                   (fs/file-name ".babashka")
+                   (fs/file-name pods-bin-dir)
                    (fs/file-name classpath-file))))))))
 
 (defn build-runtime-layer
