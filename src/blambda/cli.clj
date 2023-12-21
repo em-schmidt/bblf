@@ -2,7 +2,6 @@
   (:require [babashka.cli :as cli]
             [blambda.api :as api]
             [blambda.api.terraform :as api.terraform]
-            [clojure.set :as set]
             [clojure.string :as str]))
 
 (def specs
@@ -134,14 +133,10 @@
    :use-s3
    {:cmds #{:terraform-write-config}
     :desc "If true, use S3 for artifacts when creating layers"
-    :coerce :boolean}
+    :coerce :boolean}})
 
-   :work-dir
-   {:desc "Working directory"
-    :ref "<dir>"
-    :default ".work"}})
 
-(def global-opts #{:target-dir :work-dir})
+(def global-opts #{:target-dir})
 
 (defn apply-defaults [default-opts spec]
   (->> spec

@@ -1,13 +1,14 @@
 ;; AWS Lambda runtime using babashka.
 ;;
 ;;  The bootstrap shell script will run this
+;;  and set the classpath to the $LAMBDA_TASK_ROOT.
 
-(require '[babashka.http-client :as http]
+(require '[org.httpkit.client :as http]
          '[clojure.string :as str]
          '[cheshire.core :as cheshire])
 
 (def handler-name (System/getenv "_HANDLER"))
-(println "Loading babashka lambda handler:" handler-name)
+(println "Loading babashka lambda handler: " handler-name)
 
 (def runtime-api-url (str "http://" (System/getenv "AWS_LAMBDA_RUNTIME_API") "/2018-06-01/runtime/"))
 
@@ -42,20 +43,21 @@
   "Get the next invocation, returns payload and fn to respond."
   []
   (let [{:keys [headers body]}
-        (http/get (str runtime-api-url "invocation/next")
-                  {:timeout timeout-ms})
-        id (get headers "lambda-runtime-aws-request-id")]
+        @(http/get (str runtime-api-url "invocation/next")
+                   {:timeout timeout-ms
+                    :as :text})
+        id (:lambda-runtime-aws-request-id headers)]
     {:event (cheshire/decode body keyword)
      :context headers
      :send-response!
      (fn [response]
-       (http/post (str runtime-api-url "invocation/" id "/response")
-                  {:body (cheshire/encode response)}))
+       @(http/post (str runtime-api-url "invocation/" id "/response")
+                   {:body (cheshire/encode response)}))
      :send-error!
      (fn [thrown]
-       (http/post (str runtime-api-url "invocation/" id "/error")
-                  {:body (cheshire/encode
-                          (throwable->error-body thrown))}))}))
+       @(http/post (str runtime-api-url "invocation/" id "/error")
+                   {:body (cheshire/encode
+                           (throwable->error-body thrown))}))}))
 
 (when handler
   (println "Starting babashka lambda event loop")

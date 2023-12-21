@@ -10,14 +10,15 @@
 
 (defn build-deps-layer
   "Builds layer for dependencies"
-  [{:keys [bb-arch error deps-path target-dir work-dir] :as opts}]
-  (let [deps-zipfile (lib/deps-zipfile opts)]
+  [{:keys [bb-arch error deps-path target-dir] :as opts}]
+  (let [deps-zipfile (lib/deps-zipfile opts)
+        work-dir (fs/temp-dir)]
     (if (empty? (fs/modified-since deps-zipfile deps-path))
       (println (format "\nNot rebuilding dependencies layer: no changes to %s since %s was last built"
                        (str deps-path) (str deps-zipfile)))
       (do
         (println "\nBuilding dependencies layer:" (str deps-zipfile))
-        (fs/create-dirs target-dir work-dir)
+        (fs/create-dirs target-dir)
 
         (let [gitlibs-dir "gitlibs"
               m2-dir "m2-repo"
@@ -71,11 +72,16 @@
 
 (defn build-runtime-layer
   "Builds custom runtime layer"
-  [{:keys [bb-arch bb-version target-dir work-dir]
+  
+  For given opts, it downloads the correct bb dist tarball and copies in the bootstrap and bootstrap.clj files, creating a zip file and placing it in target dir
+
+
+  [{:keys [bb-arch bb-version target-dir]
     :as opts}]
   (let [runtime-zipfile (lib/runtime-zipfile opts)
         bb-filename (lib/bb-filename bb-version bb-arch)
         bb-url (lib/bb-url bb-version bb-filename)
+        work-dir (fs/temp-dir)
         bb-tarball (format "%s/%s" work-dir bb-filename)]
     (if (and (fs/exists? bb-tarball)
              (empty? (fs/modified-since runtime-zipfile bb-tarball)))
@@ -121,15 +127,13 @@
         (apply shell {:dir work-dir}
                "zip" lambda-zipfile source-files)))))
 
-(defn build-all [{:keys [deps-layer-name] :as opts}]
+(defn build-all [opts]
   (build-runtime-layer opts)
-  (when deps-layer-name
-    (build-deps-layer opts))
   (build-lambda opts))
 
 (defn clean
   "Deletes target and work directories"
-  [{:keys [target-dir work-dir]}]
-  (doseq [dir [target-dir work-dir]]
+  [{:keys [target-dir]}]
+  (doseq [dir [target-dir]]
     (println "Removing directory:" dir)
     (fs/delete-tree dir)))

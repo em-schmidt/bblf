@@ -1,8 +1,4 @@
-{:deps {net.jmglov/blambda {:local/root "."}}
- :tasks
- {:requires ([blambda.cli :as blambda])
-
-  blambda {:doc "Controls Blambda runtime and layers"
-           :task (blambda/dispatch {})}
-
-  }}
+{:bbin/bin {bblf {:main-opts ["-m" "bblf.main"]}}
+ :paths ["src"]
+ :tasks {clean (shell "rm -rf target")}
+ :deps {io.github.em-schmidt/bblf {:local/root "."}}}
