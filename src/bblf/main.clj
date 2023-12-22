@@ -1,11 +1,6 @@
 (ns bblf.main
-  (:require [babashka.fs :as fs]
+  (:require [bblf.tools :as tools]
             [cli-matic.core :refer [run-cmd]]))
-
-(defn clean
-  [_]
-  (let [path "target"]
-    (fs/delete-tree path))) 
 
 (def cli-config
   {:command "bblf"
@@ -14,7 +9,11 @@
    [{
      :command "clean"
      :description "make clean"
-     :runs clean}]})
+     :runs tools/clean}
+    {
+     :command "build"
+     :description "make clean"
+     :runs tools/build}]})
 
 (defn -main
   [& args]
