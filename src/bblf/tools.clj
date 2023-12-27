@@ -1,5 +1,6 @@
 (ns bblf.tools
   (:require [babashka.http-client :as http]
+            [babashka.deps :refer [clojure]]
             [babashka.fs :as fs]
             [babashka.process :as p]
             [clojure.java.io :as io]
@@ -24,12 +25,12 @@
   [stream dest-dir]
   (let [cmd (str "tar -C " dest-dir " -xz")]
     (p/check (p/process
-                {:in stream :out :string}
-                cmd))))
+              {:in stream :out :string}
+              cmd))))
 
 (defn fetch-babashka
   [dest-dir version arch]
-  (log/info "fetch-babashka" 
+  (log/info "fetch-babashka"
             {:source-url (bb-url version arch)
              :dest-dir dest-dir
              :version version
@@ -39,6 +40,19 @@
       (untar-stream (:body response) dest-dir)
       (log/error "error fetching" {:response response}))))
 
+(defn fetch-deps
+  "fetch dependencies"
+  [dest-dir deps]
+  (log/info "fetch dependencies" {:dest-dir dest-dir
+                                  :deps deps})
+  (let [m2-dir (fs/create-dir (fs/canonicalize (fs/path dest-dir "m2")))
+        gitlib-dir (fs/create-dir (fs/canonicalize (fs/path dest-dir "gitlibs")))
+        deps (into deps {:mvn/local-repo (str m2-dir)})]
+    (clojure ["-Sdeps" deps "-Spath"]
+             {:dir (str dest-dir)
+              :env (assoc (into {} (System/getenv))
+                          "GITLIBS" (str gitlib-dir))})))
+
 (defn build
   [_]
   ;; download babashka, dependencies,pods, etc to temp dir
@@ -46,17 +60,21 @@
   ;; place zip file in target dir
   (let [target "target"
         targetpath (fs/canonicalize (fs/path target))]
-      (if (fs/exists? targetpath)
-        (log/trace "path exists" targetpath)
-        (fs/create-dir targetpath))
-      (fs/with-temp-dir [tempdir {}]
-        (fetch-babashka (str tempdir) "1.2.174" "linux-aarch64-static")
-        (spit (str tempdir "/bootstrap") (slurp (io/resource "bootstrap")))
-        (fs/zip 
-          (str targetpath "/function.zip")
-          [(str tempdir "/bb")
-           (str tempdir "/bootstrap")]
-          {:root (str tempdir)}))))
+    (if (fs/exists? targetpath)
+      (log/trace "path exists" targetpath)
+      (fs/create-dir targetpath))
+    (fs/with-temp-dir [tempdir {}]
+      (fetch-babashka (str tempdir) "1.2.174" "linux-aarch64-static")
+      (spit (str tempdir "/bootstrap") (slurp (io/resource "bootstrap")))
+      (fetch-deps (str tempdir)
+         {:deps (-> (slurp "deps.edn")
+                    read-string
+                   :deps)})
+
+      (fs/zip
+       (str targetpath "/function.zip")
+       [(str tempdir)]
+       {:root (str tempdir)}))))
 
 (comment
   (clean nil)
