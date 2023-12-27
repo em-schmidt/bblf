@@ -23,7 +23,7 @@ bits for lambda and call a task to make the lambda zip artifact
 somthing like: 
 
 ```clj
-(reqire '[em-schmidt/this :as lambda])
+(reqire '[em-schmidt/bblf :as lf])
 
 (defn dostuff
     []
@@ -31,7 +31,7 @@ somthing like:
 
 (defn entrypoint
     []
-    (lambda/run dostuff))
+    (lf/run dostuff))
 ```
 
 ## Credits

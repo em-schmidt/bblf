@@ -2,6 +2,7 @@
   (:require [babashka.http-client :as http]
             [babashka.fs :as fs]
             [babashka.process :as p]
+            [clojure.java.io :as io]
             [taoensso.timbre :as log]))
 
 (defn clean
@@ -22,14 +23,9 @@
 (defn untar-stream
   [stream dest-dir]
   (let [cmd (str "tar -C " dest-dir " -xz")]
-    ()
-   (log/info "in untar" {:cmd cmd
-                         :stream stream
-                         :dest-dir dest-dir}
-    @(p/process
-        {:in stream :out :string}
-        cmd)
-    (log/info "done with tar"))))
+    (p/check (p/process
+                {:in stream :out :string}
+                cmd))))
 
 (defn fetch-babashka
   [dest-dir version arch]
@@ -40,9 +36,7 @@
              :arch arch})
   (let [response (http/get (bb-url version arch) {:as :stream})]
     (if (= 200 (:status response))
-      (try (untar-stream (:body response) dest-dir)
-           (catch Exception e
-            (log/error "error untarring" {:exception e})))
+      (untar-stream (:body response) dest-dir)
       (log/error "error fetching" {:response response}))))
 
 (defn build
@@ -50,27 +44,21 @@
   ;; download babashka, dependencies,pods, etc to temp dir
   ;; arrange and zip up downloaded files
   ;; place zip file in target dir
-
-  ;;(let bb-dest (str (fs/canonicalize (fs/create-dir "target"))))
   (let [target "target"
         targetpath (fs/canonicalize (fs/path target))]
       (if (fs/exists? targetpath)
-        (log/info "path exists" targetpath)
+        (log/trace "path exists" targetpath)
         (fs/create-dir targetpath))
       (fs/with-temp-dir [tempdir {}]
-        (log/info "build dirs" {:target target :tempdir tempdir})
-        (log/info "the tempdir" {:tempdir tempdir})
         (fetch-babashka (str tempdir) "1.2.174" "linux-aarch64-static")
-        (map #(println (str %)) (fs/list-dir tempdir)))))
-
-
-(defn main []
-  (build nil))
+        (spit (str tempdir "/bootstrap") (slurp (io/resource "bootstrap")))
+        (fs/zip 
+          (str targetpath "/function.zip")
+          [(str tempdir "/bb")
+           (str tempdir "/bootstrap")]
+          {:root (str tempdir)}))))
 
 (comment
-  (-> (http/get "https://www.google.com/")
-      :body)
-
   (clean nil)
   (fs/cwd)
   (build nil))
