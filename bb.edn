@@ -1,4 +1,5 @@
 {:bbin/bin {bblf {:main-opts ["-m" "bblf.main"]}}
  :paths ["src"]
  :tasks {clean (shell "rm -rf target")}
- :deps {io.github.em-schmidt/bblf {:local/root "."}}}
+ :deps {io.github.em-schmidt/bblf {:local/root "."}
+        djblue/portal {:mvn/version "0.51.0"}}}

@@ -9,8 +9,8 @@
 (defn clean
   [_]
   (let [path "target"]
-    (fs/delete-tree path)
-    (log/info "cleaned" {:path path})))
+    (log/info "clean" {:path path})
+    (fs/delete-tree path)))
 
 (defn- bb-url
   "format the github release url for babashka"
@@ -53,8 +53,12 @@
               :env (assoc (into {} (System/getenv))
                           "GITLIBS" (str gitlib-dir))})))
 
+;;(defn fetch-pods
+;;  "fetch any required pods"
+;;  [dest-dir pods]  false)
+
 (defn build
-  [_]
+  [{:keys [bb-arch bb-version]}]
   ;; download babashka, dependencies,pods, etc to temp dir
   ;; arrange and zip up downloaded files
   ;; place zip file in target dir
@@ -64,12 +68,13 @@
       (log/trace "path exists" targetpath)
       (fs/create-dir targetpath))
     (fs/with-temp-dir [tempdir {}]
-      (fetch-babashka (str tempdir) "1.2.174" "linux-aarch64-static")
+      (fetch-babashka (str tempdir) bb-version bb-arch)
       (spit (str tempdir "/bootstrap") (slurp (io/resource "bootstrap")))
       (fetch-deps (str tempdir)
          {:deps (-> (slurp "deps.edn")
                     read-string
                    :deps)})
+      ;;(fetch-pods (str tempdir) {})
 
       (fs/zip
        (str targetpath "/function.zip")
@@ -79,5 +84,6 @@
 (comment
   (clean nil)
   (fs/cwd)
-  (build nil))
+  (build {:bb-arch "linux-amd64-static"
+          :bb-version "1.3.186"}))
 

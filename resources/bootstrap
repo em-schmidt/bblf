@@ -1,9 +1,9 @@
 #!/bin/sh -e
 
 echo "Starting bootstrap"
-echo "HANDER: ${_HANDLER})"
+echo "HANDER: ${_HANDLER}"
 echo "PWD: $(pwd)"
 echo "==========="
 echo "$(ls .)"
 
-./bb -cp $CLASSPATH -m bblf.main
+./bb --deps-root $(pwd) -m ${_HANDLER}
