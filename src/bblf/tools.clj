@@ -3,6 +3,7 @@
             [babashka.deps :refer [clojure]]
             [babashka.fs :as fs]
             [babashka.process :as p]
+            [bblf.lambda :as lambda]
             [clojure.java.io :as io]
             [taoensso.timbre :as log]))
 
@@ -68,18 +69,37 @@
       (log/trace "path exists" targetpath)
       (fs/create-dir targetpath))
     (fs/with-temp-dir [tempdir {}]
-      (fetch-babashka (str tempdir) bb-version bb-arch)
-      (spit (str tempdir "/bootstrap") (slurp (io/resource "bootstrap")))
-      (fetch-deps (str tempdir)
-         {:deps (-> (slurp "deps.edn")
-                    read-string
-                   :deps)})
-      ;;(fetch-pods (str tempdir) {})
+      (let [dir (str tempdir)] 
+        (fetch-babashka dir bb-version bb-arch)
+        (spit (str dir "/bootstrap") (slurp (io/resource "bootstrap")))
+        (fs/set-posix-file-permissions (str dir "/bootstrap") "r-xr-xr-x")
+        (fetch-deps dir
+           {:deps (-> (slurp "deps.edn")
+                      read-string
+                     :deps)}))
+      ;; TODO: (fetch-pods (str tempdir) {})
+      ;; TODO: (package function)
 
       (fs/zip
        (str targetpath "/function.zip")
        [(str tempdir)]
        {:root (str tempdir)}))))
+
+(defn list-fns
+  [_]
+  (run! println (lambda/list-fns)))
+
+(defn create-lf
+  [opts]
+  (prn (lambda/create-lf "target/function.zip" opts)))
+
+(defn delete-lf
+  [opts]
+  (prn (lambda/delete-lf opts)))
+
+(defn call-lf
+  [opts]
+  (prn (lambda/call-lf opts)))
 
 (comment
   (clean nil)

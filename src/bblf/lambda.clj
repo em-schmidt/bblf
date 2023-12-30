@@ -14,18 +14,18 @@
 
 (defn put-s3-artifact
   "puts a given file into s3 bucket path"
-  [artifact-path {:keys [fn-bucket fn-name]}]
+  [artifact-path {:keys [FunctionName Bucket]}]
   (if (fs/exists? artifact-path)
     (let [s3 (aws/client {:api :s3})
-          s3-key (str fn-name "/function.zip")]
+          s3-key (str FunctionName "/function.zip")]
       (aws/invoke s3 {:op :PutObject 
-                      :request {:Bucket fn-bucket
+                      :request {:Bucket Bucket
                                 :Key s3-key
                                 :Body (io/input-stream artifact-path)}})
       (log/info "put artifact in bucket"  {:localpath artifact-path
-                                           :S3Bucket fn-bucket
+                                           :S3Bucket Bucket
                                            :S3Key s3-key})
-      {:S3Bucket fn-bucket
+      {:S3Bucket Bucket
        :S3Key s3-key})
     (throw (ex-info "artifact not found" {:path artifact-path}))))
 
@@ -40,24 +40,16 @@
 
 (defn create-lf
   "create lambda function"
-  [sourcefile {:keys [fn-name fn-desc fn-role-arn] :as opts}]
-  (log/info "create lambda" {:name fn-name
+  [sourcefile {:keys [FunctionName fn-desc RoleArn] :as opts}]
+  (log/info "create lambda" {:name FunctionName 
                              :source sourcefile})
   (let [lambda (aws/client {:api :lambda})
         s3-artifact (put-s3-artifact sourcefile opts)]
     (aws/invoke lambda {:op :CreateFunction
-                        :request {:FunctionName fn-name
-                                  :Runtime "provided.al2" :Role fn-role-arn
+                        :request {:FunctionName FunctionName 
+                                  :Runtime "provided.al2" :Role RoleArn
                                   :Handler "index.handler" :Code s3-artifact
                                   :Description fn-desc :Timeout 3 :MemorySize 128}})))
-
-(defn update-lf
-  "update lambda function"
-  []
-  (log/info "update lambda")
-  (let [lambda (aws/client {:api :lambda})]
-    (aws/invoke lambda {:op :Invoke})
-    false))
 
 (defn call-lf
   "call lambda function"
@@ -97,10 +89,10 @@
   ;; given config, put object in appropriate s3 path
   ;; config needs, bucket name, function name
 
-  (def opts {:fn-name "test"
+  (def opts {:FunctionName "test"
              :fn-desc "test description"
-             :fn-bucket "bblf-fns"
-             :fn-role-arn "arn:aws:iam::325274606117:role/lambda_basic_execution"})
+             :Bucket "bblf-fns"
+             :RoleArn "arn:aws:iam::325274606117:role/lambda_basic_execution"})
 
   ;; list lambda functions
   (list-fns)
@@ -115,7 +107,7 @@
 
   (create-lf "target/function.zip" opts)
 
-  (delete-lf {:FunctionName (:fn-name opts)})
+  (delete-lf {:FunctionName (:FunctionName opts)})
 
     ;; call function
   (call-lf {:FunctionName "test"}))
