@@ -3,8 +3,6 @@
             [bblf.tools :as tools]
             [cli-matic.core :refer [run-cmd]]))
 
-;; TODO: - [ ] config handling
-
 (def config (config/default-config))
 
 (def cli-config
@@ -21,10 +19,16 @@
      :runs tools/build}
     {:command "config"
      :description "manage config"
+     :opts [{:option "config-file" :short "F" :type :string :default "bblf.edn"}]
      :subcommands
      [{:command "show"
        :description "display current config"
-       :runs config/display-config}]}
+       :runs config/display-config}
+      {:command "set"
+       :description "set config value"
+       :opts [{:option "config-key" :short 0 :type :string :default :present}
+              {:option "config-val" :short 1 :type :string :default :present}]
+       :runs config/update-config}]}
     {:command "lambda"
      :description "manage lambda functions"
      :subcommands

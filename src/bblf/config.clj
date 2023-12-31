@@ -2,9 +2,6 @@
   (:require [babashka.fs :as fs]
             [clojure.string :as str]))
 
-;; TODO: write config file
-;; TODO: update config values
-
 (defn default-bb-version
   "latest or current?"
   []
@@ -45,7 +42,7 @@
 
 (defn get-config
   "get config from file"
-  [config-file]
+  [{:keys [config-file]}]
   (if (fs/exists? config-file) 
       (read-string (slurp "bblf.edn"))
       (default-config)))
@@ -65,15 +62,42 @@
 
 (defn display-config
  "display config for cli"
- [_]
- (->> (get-config "bblf.edn")
+ [opts]
+ (->> (get-config opts)
       flatten-config 
       (run! (fn [[k v]]
-              (println k "=" v)))))
+              (println (name k) "=" v)))))
+
+(defn- config-val-to-map
+  "translate from cli config keys in dot separated nodes to a nested map structure"
+  [k v]
+  (let [keys (str/split (str k) #"\.")
+        keys (map keyword keys)]
+   (assoc-in {} keys v)))
+
+(defn write-config-file
+ "write config to file"
+ [{:keys [config-file config]}]
+ (spit config-file (pr-str config)))
+
+(defn update-config
+  "update config with value from cli"
+  [{:keys [config-key config-val config-file]}]
+  (let [config (get-config config-file)
+        config-key (map keyword (str/split (str config-key) #"\."))
+        new-config (assoc-in config config-key config-val)]
+    (write-config-file
+      {:config-file config-file
+       :config new-config}))) 
 
 (comment
+  (write-config-file {:config-file "bblf.edn"})
+
   (get-config "bblf.edn")
 
-  (display-config nil))
+  (update-config {:config-file "bblf.edn" :config-key "babashka.version" :config-val "YUM"})
 
+  (config-val-to-map "babaska.version" "YUM")
+
+  (display-config nil))
 
