@@ -42,7 +42,8 @@
   "create lambda function"
   [sourcefile {:keys [FunctionName Description RoleArn Handler] :as opts}]
   (log/info "create lambda" {:name FunctionName 
-                             :source sourcefile})
+                             :source sourcefile
+                             :RoleArn RoleArn})
   (let [lambda (aws/client {:api :lambda})
         s3-artifact (put-s3-artifact sourcefile opts)]
     (aws/invoke lambda {:op :CreateFunction

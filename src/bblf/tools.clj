@@ -41,22 +41,24 @@
       (untar-stream (:body response) dest-dir)
       (log/error "error fetching" {:response response}))))
 
-(defn fetch-deps
-  "fetch dependencies"
-  [dest-dir deps]
-  (log/info "fetch dependencies" {:dest-dir dest-dir
-                                  :deps deps})
-  (let [m2-dir (fs/create-dir (fs/canonicalize (fs/path dest-dir "m2")))
-        gitlib-dir (fs/create-dir (fs/canonicalize (fs/path dest-dir "gitlibs")))
-        deps (into deps {:mvn/local-repo (str m2-dir)})]
-    (clojure ["-Sdeps" deps "-Spath"]
-             {:dir (str dest-dir)
-              :env (assoc (into {} (System/getenv))
-                          "GITLIBS" (str gitlib-dir))})))
+(defn copy-source
+  "copy the source for packaging"
+  [src-dirs dest-dir]
+  (log/info "copying source" {:src-dirs src-dirs
+                              :dest-dir dest-dir})
+  (run! #(fs/copy-tree % (fs/path dest-dir %)) src-dirs))
 
-;;(defn fetch-pods
-;;  "fetch any required pods"
-;;  [dest-dir pods]  false)
+(defn prepare-uberjar
+  "package bb uberjar"
+  [sources dest-dir]
+  (let [project-edns ["deps.edn" "bb.edn"]
+        jarfile "lambda.jar"]
+    (log/info "perparing uberjar" {:jarfile jarfile})
+    (fs/with-temp-dir [build-temp {}]
+      (copy-source sources build-temp)
+      (run! #(fs/copy % build-temp) project-edns)
+      (p/shell (str "bb uberjar " jarfile) {:dir build-temp}) 
+      (fs/move (str build-temp "/lambda.jar") dest-dir))))
 
 (defn build
   [{:keys [bb-arch bb-version]}]
@@ -69,21 +71,21 @@
       (log/trace "path exists" targetpath)
       (fs/create-dir targetpath))
     (fs/with-temp-dir [tempdir {}]
-      (let [dir (str tempdir)] 
+      (let [dir (str tempdir)
+            deps (-> (slurp "deps.edn")
+                     read-string)] 
         (fetch-babashka dir bb-version bb-arch)
-        (spit (str dir "/bootstrap") (slurp (io/resource "bootstrap")))
-        (fs/set-posix-file-permissions (str dir "/bootstrap") "r-xr-xr-x")
-        (fetch-deps dir
-           {:deps (-> (slurp "deps.edn")
-                      read-string
-                     :deps)}))
+        (prepare-uberjar (:paths deps) dir)
       ;; TODO: (fetch-pods (str tempdir) {})
-      ;; TODO: (package function)
+        (spit (str dir "/bootstrap") (slurp (io/resource "bootstrap")))
+        (fs/set-posix-file-permissions (str dir "/bootstrap") "rwxr-xr-x") 
 
-      (fs/zip
-       (str targetpath "/function.zip")
-       [(str tempdir)]
-       {:root (str tempdir)}))))
+        (p/shell "ls -l" {:dir tempdir}))
+
+      (doall (fs/zip
+              (str targetpath "/function.zip")
+              [(str tempdir)]
+              {:root (str tempdir)})))))
 
 (defn list-fns
   [_]
@@ -102,6 +104,7 @@
   (prn (lambda/call-lf opts)))
 
 (comment
+  (copy-source ["src" "resources"] "target")
   (clean nil)
   (fs/cwd)
   (build {:bb-arch "linux-amd64-static"

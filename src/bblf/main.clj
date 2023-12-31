@@ -3,7 +3,7 @@
             [bblf.tools :as tools]
             [cli-matic.core :refer [run-cmd]]))
 
-(def config (config/default-config))
+(def config (config/get-config {:config-file "bblf.edn"}))
 
 (def cli-config
   {:command "bblf"

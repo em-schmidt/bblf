@@ -8,4 +8,4 @@ echo "PWD: $(pwd)"
 echo "==========="
 echo "$(ls .)"
 
-./bb --deps-root $(pwd) -m ${_HANDLER}
+./bb -jar lambda.jar -m ${_HANDLER}

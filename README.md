@@ -6,10 +6,12 @@ Utilities for building and working with babashka scripts as lambda functions
 
 ## todods 
 
-- [ ] opts for config stuff
+- [x] opts for config stuff
 - [x] redo the bootstrap/tasks/etc maybe package as bbin?
+- [ ] looks at the task config stuff [here](https://github.com/babashka/babashka/wiki/Self-contained-executable)
 - [ ] make the library bits for working with lambda includable
 - [ ] figure out what to do with LICENSE and Credits
+- [ ] use self contained executable for packaging [see](https://github.com/babashka/babashka/wiki/Self-contained-executable#uberjar)
 
 ideal state: I'd like to be able to have a pretty normal function and wrap it in handler 
 bits for lambda and call a task to make the lambda zip artifact
