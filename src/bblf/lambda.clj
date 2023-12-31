@@ -40,7 +40,7 @@
 
 (defn create-lf
   "create lambda function"
-  [sourcefile {:keys [FunctionName fn-desc RoleArn] :as opts}]
+  [sourcefile {:keys [FunctionName Description RoleArn Handler] :as opts}]
   (log/info "create lambda" {:name FunctionName 
                              :source sourcefile})
   (let [lambda (aws/client {:api :lambda})
@@ -48,8 +48,8 @@
     (aws/invoke lambda {:op :CreateFunction
                         :request {:FunctionName FunctionName 
                                   :Runtime "provided.al2" :Role RoleArn
-                                  :Handler "index.handler" :Code s3-artifact
-                                  :Description fn-desc :Timeout 3 :MemorySize 128}})))
+                                  :Handler Handler :Code s3-artifact
+                                  :Description Description :Timeout 3 :MemorySize 128}})))
 
 (defn call-lf
   "call lambda function"

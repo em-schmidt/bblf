@@ -39,6 +39,8 @@
        :description "create lambda function"
        :opts [{:option "FunctionName" :short "f" :type :string  :default (:FunctionName (:lambda config))}
               {:option "Bucket" :short "b" :type :string :default (:Bucket (:lambda config))}
+              {:option "Description" :short "d" :type :string :default (:Description (:lambda config))}
+              {:option "Handler" :short "H" :type :string :default (:Handler (:lambda config))}
               {:option "RoleArn" :short "r" :type :string :default (:RoleArn (:lambda config))}]
        :runs tools/create-lf}
       {:command "delete"

@@ -18,7 +18,17 @@
   []
   (or
     (fs/file-name (fs/cwd))
-    "fallback"))
+    "function-name"))
+
+(defn default-fn-description
+ "default function description"
+ []
+ "bblf function")
+
+(defn default-fn-handler
+  "default function handler"
+  []
+  (str (default-fn-name) "/" (default-fn-name)))
 
 (defn default-bucket-name
   "default bucket name"
@@ -28,7 +38,7 @@
 (defn default-role-arn
   "default role arn"
   []
-  "arn:aws:iam::325274606117:role/lambda_basic_execution")
+  "arn:aws:iam::012345678901:role/lambda_basic_execution")
 
 (defn default-config
   []
@@ -38,6 +48,8 @@
    :lambda
    {:FunctionName (default-fn-name)
     :Bucket (default-bucket-name)
+    :Description (default-fn-description)
+    :Handler (default-fn-handler)
     :RoleArn (default-role-arn)}})
 
 (defn get-config
