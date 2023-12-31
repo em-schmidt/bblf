@@ -94,8 +94,8 @@
 
 (defn update-config
   "update config with value from cli"
-  [{:keys [config-key config-val config-file]}]
-  (let [config (get-config config-file)
+  [{:keys [config-key config-val config-file] :as opts}]
+  (let [config (get-config opts)
         config-key (map keyword (str/split (str config-key) #"\."))
         new-config (assoc-in config config-key config-val)]
     (write-config-file
