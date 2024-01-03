@@ -1,6 +1,5 @@
 (ns bblf.tools
   (:require [babashka.http-client :as http]
-            [babashka.deps :refer [clojure]]
             [babashka.fs :as fs]
             [babashka.process :as p]
             [bblf.lambda :as lambda]
@@ -44,9 +43,11 @@
 (defn copy-source
   "copy the source for packaging"
   [src-dirs dest-dir]
-  (log/info "copying source" {:src-dirs src-dirs
-                              :dest-dir dest-dir})
-  (run! #(fs/copy-tree % (fs/path dest-dir %)) src-dirs))
+  (let [dest-dir (str dest-dir)
+        src-dirs (or src-dirs ["src"])]
+    (log/trace "copying source" {:src-dirs src-dirs
+                                 :dest-dir dest-dir})
+    (run! #(fs/copy-tree % (fs/path dest-dir %)) src-dirs)))
 
 (defn prepare-uberjar
   "package bb uberjar"
@@ -55,10 +56,13 @@
         jarfile "lambda.jar"]
     (log/info "perparing uberjar" {:jarfile jarfile})
     (fs/with-temp-dir [build-temp {}]
-      (copy-source sources build-temp)
-      (run! #(fs/copy % build-temp) project-edns)
-      (p/shell (str "bb uberjar " jarfile) {:dir build-temp})
-      (fs/move (str build-temp "/lambda.jar") dest-dir))))
+      (let [temp-path (str build-temp)]
+        (copy-source sources temp-path)
+        (log/trace "copy project deps config" {:project-edns project-edns
+                                               :dest temp-path})
+        (run! #(fs/copy % temp-path) project-edns)
+        (p/shell (str "bb uberjar " jarfile) {:dir temp-path})
+        (fs/move (str temp-path "/lambda.jar") dest-dir)))))
 
 (defn build
   [{:keys [bb-arch bb-version]}]
