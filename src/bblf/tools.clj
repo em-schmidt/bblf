@@ -57,7 +57,7 @@
     (fs/with-temp-dir [build-temp {}]
       (copy-source sources build-temp)
       (run! #(fs/copy % build-temp) project-edns)
-      (p/shell (str "bb uberjar " jarfile) {:dir build-temp}) 
+      (p/shell (str "bb uberjar " jarfile) {:dir build-temp})
       (fs/move (str build-temp "/lambda.jar") dest-dir))))
 
 (defn build
@@ -73,19 +73,16 @@
     (fs/with-temp-dir [tempdir {}]
       (let [dir (str tempdir)
             deps (-> (slurp "deps.edn")
-                     read-string)] 
+                     read-string)]
         (fetch-babashka dir bb-version bb-arch)
         (prepare-uberjar (:paths deps) dir)
-      ;; TODO: (fetch-pods (str tempdir) {})
         (spit (str dir "/bootstrap") (slurp (io/resource "bootstrap")))
-        (fs/set-posix-file-permissions (str dir "/bootstrap") "rwxr-xr-x") 
+        (fs/set-posix-file-permissions (str dir "/bootstrap") "rwxr-xr-x"))
 
-        (p/shell "ls -l" {:dir tempdir}))
-
-      (doall (fs/zip
-              (str targetpath "/function.zip")
-              [(str tempdir)]
-              {:root (str tempdir)})))))
+      (fs/zip
+       (str targetpath "/function.zip")
+       [(str tempdir)]
+       {:root (str tempdir)}))))
 
 (defn list-fns
   [_]

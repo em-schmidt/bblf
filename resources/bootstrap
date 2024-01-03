@@ -2,10 +2,14 @@
 
 set -e
 
-echo "Starting bootstrap"
-echo "HANDER: ${_HANDLER}"
-echo "PWD: $(pwd)"
-echo "==========="
-echo "$(ls .)"
+#echo "running bootstrap"
+#echo "================="
+#echo "env: "
+#env
+#echo "================="
+#echo "pwd: $(pwd)"
+#echo "$(ls .)"
+#echo "================="
 
-./bb -jar lambda.jar -m ${_HANDLER}
+./bb -jar lambda.jar -m bblf.runtime ${_HANDLER}
+

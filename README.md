@@ -8,6 +8,7 @@ Utilities for building and working with babashka scripts as lambda functions
 
 - [x] opts for config stuff
 - [x] redo the bootstrap/tasks/etc maybe package as bbin?
+- [ ] check for bblf deps inclusion when building package, maybe inject at package build time?
 - [ ] looks at the task config stuff [here](https://github.com/babashka/babashka/wiki/Self-contained-executable)
 - [ ] make the library bits for working with lambda includable
 - [ ] figure out what to do with LICENSE and Credits
