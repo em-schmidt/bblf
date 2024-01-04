@@ -37,32 +37,13 @@
               status (-> req :status)]
           (log/info "got request" {:request-id request-id
                                    :status status})
-          (try ((send-runtime-response 
-                  runtime-api 
-                  request-id 
-                  (call-handler handler req)))
-              (catch Exception e
-                (send-runtime-error 
-                  runtime-api 
-                  request-id 
-                  {:id request-id
-                   :error (.getMessage e)
-                   :stacktrace (mapv str (.getStackTrace e))}))))
+          (try (send-runtime-response 
+                 runtime-api
+                 request-id 
+                 (call-handler handler req))
+               (catch Exception e
+                 (send-runtime-error runtime-api request-id {:id request-id :error (.getMessage e) :stacktrace (mapv str (.getStackTrace e))}))))
         (recur (get-runtime-event runtime-api)))))
 
-
-(comment
-  (json/encode true)
-
-  (try
-    (throw (ex-info "test" {:cause "test"}))
-    (catch Exception e
-      (json/generate-string {:id "a"
-                             :error (.getMessage e)
-                             :stacktrace (mapv str (.getStackTrace e))})))
-
-  (log/info "test")
-  (let [url "https://www.google.com/"
-        req (http/get url {:timeout lambda-timeout})]
-    (log/info "http response" {:headers (-> req :headers (get "content-encoding"))})))
-
+(comment)
+  
