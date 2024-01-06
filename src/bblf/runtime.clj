@@ -43,7 +43,7 @@
                   "response"
                   (handler-fn req))
                 (catch Exception e
-                  (send-runtime-response runtime-api request-id "error" {:id request-id :error (.getMessage e) :type (-> e .getClass .getName) :stacktrace (mapv str (.getStackTrace e))}))))
+                  (send-runtime-response runtime-api request-id "error" {:id request-id :error (ex-message e) :data (ex-data e)})))) 
          (recur (get-runtime-event runtime-api))))))
 
 (comment
