@@ -79,37 +79,3 @@
          :Functions
          (mapv :FunctionName))))
 
-(comment
-
-  (require '[portal.api :as p])
-  (def p (p/open))
-  (add-tap #'p/submit)
-
-  (lf-bucket "bblf-fns")
-
-  ;; given config, put object in appropriate s3 path
-  ;; config needs, bucket name, function name
-
-  (def opts {:FunctionName "test"
-             :fn-desc "test description"
-             :Bucket "bblf-fns"
-             :RoleArn "arn:aws:iam::325274606117:role/lambda_basic_execution"})
-
-  ;; list lambda functions
-  (list-fns)
-
-  ;; create and delete s3 artifacts
-  (-> (put-s3-artifact "target/function.zip" opts)
-      delete-s3-artifact)
-
-  ;; create and delete lambda function
-  (-> (create-lf "target/function.zip" opts)
-      delete-lf)
-
-  (create-lf "target/function.zip" opts)
-
-  (delete-lf {:FunctionName (:FunctionName opts)})
-
-    ;; call function
-  (call-lf {:FunctionName "test"}))
-

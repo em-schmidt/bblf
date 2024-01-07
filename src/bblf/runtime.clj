@@ -39,13 +39,10 @@
                                     :status status})
            (try (send-runtime-response 
                   runtime-api
-                  request-id 
+                  request-id
                   "response"
                   (handler-fn req))
                 (catch Exception e
                   (send-runtime-response runtime-api request-id "error" {:id request-id :error (ex-message e) :data (ex-data e)})))) 
          (recur (get-runtime-event runtime-api))))))
-
-(comment
-  (resolve (symbol "bblf.runtime/-main")))
 

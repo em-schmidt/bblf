@@ -11,5 +11,7 @@ set -e
 #echo "$(ls .)"
 #echo "================="
 
+export BABASHKA_PODS_DIR=${LAMBDA_TASK_ROOT}/pods
+
 ./bb -jar lambda.jar -m bblf.runtime ${_HANDLER}
 

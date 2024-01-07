@@ -4,6 +4,7 @@
             [babashka.process :as p]
             [bblf.lambda :as lambda]
             [clojure.java.io :as io]
+            [clojure.string :as str]
             [taoensso.timbre :as log]))
 
 (defn clean
@@ -39,6 +40,25 @@
     (if (= 200 (:status response))
       (untar-stream (:body response) dest-dir)
       (log/error "error fetching" {:response response}))))
+
+
+(defn- pod-arch
+  [arch]
+  (cond (= arch "amd64") "x86_64"
+        (= arch "arm64") "aarch64"
+        :else arch))
+
+(defn fetch-pods
+  [dest-dir pods arch]
+  (let [[_ arch _] (str/split arch #"-")
+        arch       (pod-arch arch)
+        pod-dir    (str dest-dir "/pods")
+        extra-env {"BABASHKA_PODS_OS_NAME" "Linux"
+                   "BABASHKA_PODS_OS_ARCH" arch
+                   "BABASHKA_PODS_DIR" pod-dir}]
+    (log/info "fetch pods" {:pods pods
+                            :env extra-env})
+    (p/shell {:extra-env extra-env} "bb prepare")))
 
 (defn copy-source
   "copy the source for packaging"
@@ -77,8 +97,11 @@
     (fs/with-temp-dir [tempdir {}]
       (let [dir (str tempdir)
             deps (-> (slurp "deps.edn")
-                     read-string)]
+                     read-string)
+            bb (-> (slurp "bb.edn")
+                   read-string)]
         (fetch-babashka dir bb-version bb-arch)
+        (fetch-pods dir (:pods bb) bb-arch)
         (prepare-uberjar (:paths deps) dir)
         (spit (str dir "/bootstrap") (slurp (io/resource "bootstrap")))
         (fs/set-posix-file-permissions (str dir "/bootstrap") "rwxr-xr-x"))
@@ -103,11 +126,4 @@
 (defn call-lf
   [opts]
   (prn (lambda/call-lf opts)))
-
-(comment
-  (copy-source ["src" "resources"] "target")
-  (clean nil)
-  (fs/cwd)
-  (build {:bb-arch "linux-amd64-static"
-          :bb-version "1.3.186"}))
 
