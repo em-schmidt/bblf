@@ -49,13 +49,13 @@
         :else arch))
 
 (defn fetch-pods
-  [dest-dir arch]
+  [dest-dir arch os]
   (let [[_ arch _] (str/split arch #"-")
         arch       (pod-arch arch)]
     (fs/with-temp-dir [tempdir {}]
       (let [pod-dir    (str tempdir "/pods")
             pod-bin-dir (str (fs/create-dirs (str dest-dir "/bin")))
-            extra-env  {"BABASHKA_PODS_OS_NAME" "Linux"
+            extra-env  {"BABASHKA_PODS_OS_NAME" os
                         "BABASHKA_PODS_OS_ARCH" arch
                         "BABASHKA_PODS_DIR" pod-dir}]
         (log/info "fetch pods" {:env extra-env})
@@ -101,7 +101,7 @@
             deps (-> (slurp "deps.edn")
                      read-string)]
         (fetch-babashka dir bb-version bb-arch)
-        (fetch-pods dir bb-arch)
+        (fetch-pods dir bb-arch "Linux")
         (prepare-uberjar (:paths deps) dir)
         (spit (str dir "/bootstrap") (slurp (io/resource "bootstrap")))
         (fs/set-posix-file-permissions (str dir "/bootstrap") "rwxr-xr-x"))
